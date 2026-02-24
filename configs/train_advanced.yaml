@@ -1,0 +1,106 @@
+# Advanced Model Training Configuration
+
+model:
+  name: "unet_advanced"
+  encoder: "efficientnet-b4"
+  decoder_channels: [256, 128, 64, 32, 16]
+  encoder_weights: "imagenet"
+  activation: null
+  estimate_params: true  # Multi-task: predict params + image
+  attention: "scse"  # Spatial + channel squeeze & excitation
+
+loss:
+  type: "geometric"
+  weights:
+    pixel: 1.0
+    edge: 2.5       # Increased weight
+    ssim: 1.5       # Increased weight
+    gradient: 2.0   # Increased weight
+    line: 1.0       # Enable line straightness loss
+    params: 0.5     # Distortion parameter loss (if enabled)
+
+training:
+  batch_size: 6   # Larger model, smaller batch
+  accumulate_grad_batches: 3  # Effective batch = 18
+  num_epochs: 70
+  learning_rate: 1.0e-3
+  weight_decay: 1.0e-4
+  precision: "16-mixed"
+
+  # Multi-stage training
+  stages:
+    - name: "warmup"
+      epochs: 10
+      freeze_encoder: true
+      learning_rate: 1.0e-3
+
+    - name: "full_training"
+      epochs: 50
+      freeze_encoder: false
+      learning_rate: 1.0e-3
+
+    - name: "fine_tuning"
+      epochs: 10
+      freeze_encoder: false
+      learning_rate: 1.0e-5
+
+  scheduler:
+    type: "cosine"
+    T_0: 10
+    T_mult: 2
+    eta_min: 1.0e-6
+
+  gradient_clip_val: 1.0
+  gradient_clip_algorithm: "norm"
+
+data:
+  data_dir: "data"
+  train_size: 512
+  val_split: 0.15
+  num_folds: 5  # K-fold cross-validation
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+
+augmentation:
+  random_crop: true
+  horizontal_flip: 0.5
+  vertical_flip: 0.3
+  color_jitter:
+    brightness: 0.3
+    contrast: 0.3
+    saturation: 0.2
+    hue: 0.05
+  gaussian_noise: 0.4
+  blur: 0.3
+  advanced:
+    random_gamma: 0.3
+    clahe: 0.2
+
+callbacks:
+  early_stopping:
+    monitor: "val_loss"
+    patience: 15
+    mode: "min"
+    min_delta: 0.0005
+
+  model_checkpoint:
+    monitor: "val_ssim"
+    mode: "max"
+    save_top_k: 5
+    filename: "unet_advanced-{epoch:02d}-{val_ssim:.4f}"
+
+  learning_rate_monitor:
+    logging_interval: "step"
+
+  stochastic_weight_averaging:
+    swa_lrs: 1.0e-5
+    swa_epoch_start: 0.75  # Start SWA at 75% of training
+
+logging:
+  project: "lens-correction"
+  name: "unet-advanced"
+  log_every_n_steps: 25
+  save_dir: "outputs/logs"
+
+seed: 42
