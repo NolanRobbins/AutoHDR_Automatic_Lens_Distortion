@@ -63,6 +63,8 @@ data/gt/
 
 # Outputs
 outputs/
+!outputs/Test Pictures/
+!outputs/Test Pictures/*.PNG
 experiments/*/
 !experiments/experiment_log.md
 wandb/
