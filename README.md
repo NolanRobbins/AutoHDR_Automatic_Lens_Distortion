@@ -12,6 +12,8 @@ Modern cameras and lenses introduce predictable distortions (barrel/pincushion) 
 
 **Objective**: Build a model that automatically corrects lens distortion in photos without requiring lens-specific calibration profiles.
 
+**Result**: An ensemble ML framework with DL + normal optimization for optimal results. Refer to the Test Pictures folder in Outputs to see photos with and without correction.
+
 ---
 
 ## Project Structure
