@@ -20,52 +20,77 @@ Modern cameras and lenses introduce predictable distortions (barrel/pincushion) 
 AutoHDR Project/
 ├── configs/                     # Training and inference configurations
 │   ├── train_baseline.yaml     # Baseline U-Net config
+│   ├── train_radial.yaml       # Radial distortion model (current)
 │   ├── train_advanced.yaml     # Advanced model config
 │   └── inference.yaml          # Inference settings
-├── data/                        # Dataset (download separately)
+├── data/                        # Dataset (download separately, gitignored)
 │   ├── train/                  # Training pairs (distorted + corrected)
 │   ├── test/                   # Test images to correct
 │   └── README.md               # Data download instructions
-├── notebooks/                   # Jupyter notebooks (development workflow)
+├── notebooks/                   # Jupyter notebooks (EDA & experiments)
 │   ├── 00_environment_setup.ipynb
-│   ├── 01_eda_and_analysis.ipynb
-│   ├── 02_baseline_classical.ipynb
-│   ├── 03_dl_baseline_unet.ipynb
-│   ├── 04_advanced_training.ipynb    # Colab-compatible
-│   ├── 05_inference_submission.ipynb
-│   └── 06_results_analysis.ipynb
+│   └── 01_eda_and_analysis.ipynb
 ├── src/                         # Source code (production-ready)
-│   ├── data/                   # Dataset, transforms
-│   ├── models/                 # Architectures, losses, metrics
-│   ├── training/               # Training pipeline
+│   ├── data/                   # Dataset classes and transforms
+│   ├── models/                 # Model architectures
+│   │   ├── swin_tps.py        # Swin Transformer + radial distortion
+│   │   ├── classical.py       # Classical line-based optimizer
+│   │   ├── losses.py          # Loss functions (LPIPS, edge, etc.)
+│   │   ├── metrics.py         # Evaluation metrics
+│   │   └── unet.py            # U-Net baseline
+│   ├── training/               # Training pipeline (PyTorch Lightning)
+│   │   ├── trainer.py         # LensCorrector Lightning module
+│   │   └── callbacks.py       # Training callbacks
 │   ├── inference/              # Inference pipeline
-│   └── utils/                  # Helpers (visualization, geometry, I/O)
+│   │   ├── ensemble.py        # Cascade ensemble (DL + classical)
+│   │   └── predictor.py       # Single model inference
+│   └── utils/                  # Helpers
+│       ├── visualization.py   # Plotting and display
+│       ├── geometry.py        # Geometric transformations
+│       └── io_utils.py        # File I/O utilities
 ├── scripts/                     # CLI scripts
-│   ├── download_data.py
-│   ├── train.py
-│   ├── inference.py
-│   ├── prepare_submission.py
-│   └── upload_to_bounty.py
+│   ├── demo.py                 # Gradio web demo
+│   └── train.py                # Training script
 ├── tests/                       # Unit tests
+│   ├── test_models.py
+│   ├── test_losses.py
+│   └── test_data.py
 ├── outputs/                     # Generated files (gitignored)
-│   ├── models/                 # Saved checkpoints
+│   ├── models/                 # Saved checkpoints (.ckpt files)
 │   ├── predictions/            # Test set predictions
 │   ├── figures/                # Visualizations
 │   └── logs/                   # Training logs
 ├── requirements.txt             # Python dependencies
 ├── requirements-dev.txt         # Development dependencies
 ├── environment.yml              # Conda environment
-├── Makefile                     # Automated workflows
-└── REPORT.md                    # Technical report
+├── pyproject.toml              # Project metadata
+├── setup.py                    # Package setup
+├── Makefile                    # Automated workflows
+├── GETTING_STARTED.md          # Quick start guide
+├── README.md                   # This file
+└── REPORT.md                   # Technical report
 ```
 
 ---
 
 ## 🚀 Try the Demo (Quick Start for Interviewers)
 
-**Want to see the lens correction in action? Launch the Gradio demo in 2 simple ways:**
+**Want to see the lens correction in action? Follow these steps:**
 
-### Option 1: Using Makefile (Easiest)
+### Step 1: Download Pre-trained Model
+
+The trained model checkpoint is too large for GitHub (300MB). Download it from Google Drive:
+
+**📥 [Download Model: radial_v1-epoch=04-val_ssim=0.7963.ckpt](https://drive.google.com/file/d/YOUR_FILE_ID_HERE/view?usp=sharing)**
+
+Place the downloaded `.ckpt` file in:
+```
+outputs/models/radial_v1-epoch=04-val_ssim=0.7963.ckpt
+```
+
+### Step 2: Launch the Demo
+
+**Option A: Using Makefile (Easiest)**
 
 ```bash
 # Activate environment first
@@ -79,7 +104,7 @@ make demo
 make demo-dl
 ```
 
-### Option 2: Direct Command
+**Option B: Direct Command**
 
 ```bash
 # Navigate to project directory
@@ -448,9 +473,32 @@ The Gradio interface shows:
 
 **Last Updated**: February 27, 2026
 
-**Model Checkpoint**: `outputs/models/radial_v1-epoch=04-val_ssim=0.7963.ckpt`
+**Model Checkpoint**: `outputs/models/radial_v1-epoch=04-val_ssim=0.7963.ckpt` (300MB)
+
+**Model Download**: [Google Drive Link](https://drive.google.com/file/d/YOUR_FILE_ID_HERE/view?usp=sharing)
 
 **Quick Demo Command**:
 ```bash
+# After downloading the model to outputs/models/
 python scripts/demo.py --ckpt outputs/models/radial_v1-epoch=04-val_ssim=0.7963.ckpt --mode ensemble
 ```
+
+---
+
+## 📦 Pre-trained Model Download
+
+**File**: `radial_v1-epoch=04-val_ssim=0.7963.ckpt` (300MB)
+**Download**: [Google Drive](https://drive.google.com/file/d/YOUR_FILE_ID_HERE/view?usp=sharing)
+
+**Performance**:
+- Validation SSIM: **0.7963** (epoch 4)
+- Architecture: Swin-T encoder + radial distortion (k1, k2)
+- Training: Mixed precision, batch size 8, 224×224
+
+**Installation**:
+1. Download the `.ckpt` file from Google Drive
+2. Create directory: `mkdir -p outputs/models`
+3. Place file in: `outputs/models/radial_v1-epoch=04-val_ssim=0.7963.ckpt`
+4. Run demo: `make demo` or use the direct command above
+
+**Note**: Replace `YOUR_FILE_ID_HERE` with your actual Google Drive file ID after uploading.
