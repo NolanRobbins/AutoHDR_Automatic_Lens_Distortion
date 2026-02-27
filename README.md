@@ -81,7 +81,7 @@ AutoHDR Project/
 
 The trained model checkpoint is too large for GitHub (300MB). Download it from Google Drive:
 
-**📥 [Download Model: radial_v1-epoch=04-val_ssim=0.7963.ckpt]([[https://drive.google.com/file/d/YOUR_FILE_ID_HERE/view?usp=sharing](https://drive.google.com/file/d/15gfGositabviKfNejV1yprk4LAcIy7Ob/view?usp=sharing)]**
+**📥 [Download Model: radial_v1-epoch=04-val_ssim=0.7963.ckpt](https://drive.google.com/file/d/15gfGositabviKfNejV1yprk4LAcIy7Ob/view?usp=sharing)**
 
 Place the downloaded `.ckpt` file in:
 ```
@@ -212,36 +212,6 @@ Open and run [01_eda_and_analysis.ipynb](notebooks/01_eda_and_analysis.ipynb) to
 
 ---
 
-## Development Workflow
-
-### Option 1: Notebook-Based (Recommended for Exploration)
-
-1. **EDA**: `01_eda_and_analysis.ipynb`
-2. **Baseline**: `02_baseline_classical.ipynb` (classical CV)
-3. **Deep Learning**: `03_dl_baseline_unet.ipynb` (simple U-Net)
-4. **Advanced**: `04_advanced_training.ipynb` (best model, Colab-compatible)
-5. **Inference**: `05_inference_submission.ipynb`
-6. **Analysis**: `06_results_analysis.ipynb`
-
-### Option 2: CLI-Based (Production Workflow)
-
-```bash
-# Train baseline model
-make train-baseline
-# or: python scripts/train.py --config configs/train_baseline.yaml
-
-# Train advanced model
-make train-advanced
-
-# Run inference
-make inference
-
-# Create submission
-python scripts/prepare_submission.py
-```
-
----
-
 ## Model Approach
 
 ### Architecture: Radial Distortion Model + Cascade Ensemble
@@ -297,69 +267,6 @@ python scripts/prepare_submission.py
 - Edge alignment error
 - Line curvature
 
-**Workflow**:
-1. Train model locally or on Colab
-2. Generate predictions on test set
-3. Upload to bounty.autohdr.com → get score
-4. Download submission.csv
-5. Submit to Kaggle leaderboard
-6. Iterate based on feedback
-
----
-
-## Running on Google Colab
-
-All notebooks are Colab-compatible for faster training on A100 GPUs:
-
-1. Upload project to Google Drive or GitHub
-2. Open [04_advanced_training.ipynb](notebooks/04_advanced_training.ipynb) in Colab
-3. Mount Drive / clone repo
-4. Install dependencies: `!pip install -r requirements.txt`
-5. Train with A100 (3-5x faster than local)
-6. Save checkpoints to Drive
-
-**Benefits**:
-- Access to high-end GPUs (A100, V100)
-- No local GPU wear
-- Can run multiple experiments in parallel
-
----
-
-## Testing
-
-```bash
-# Run all tests
-make test
-
-# Run specific test file
-pytest tests/test_models.py -v
-
-# With coverage
-pytest tests/ --cov=src --cov-report=html
-```
-
----
-
-## Code Quality
-
-```bash
-# Format code
-make format
-
-# Lint code
-make lint
-
-# Clean cache
-make clean
-```
-
-**Standards** (following [CLAUDE.md](../claude.md)):
-- Type hints on all functions
-- Google-style docstrings
-- Black formatting (line length 88)
-- mypy type checking
-- pytest for testing
-
 ---
 
 ## Results
@@ -368,7 +275,6 @@ make clean
 
 | Model | Val SSIM | Val PSNR (dB) | Epoch | Notes |
 |-------|----------|---------------|-------|-------|
-| Swin-T + TPS | ~0.798 | ~12.6 | 0 | Plateaued at initialization |
 | **Radial v1 (Swin-T + k1/k2)** | **0.7963** | ~12.3 | **4** | **Best model - stable training** |
 | Cascade Ensemble | — | — | — | Same metrics; improves line straightness |
 
@@ -454,12 +360,6 @@ This project is for educational and assessment purposes. Dataset images are prov
 
 ---
 
-## Contact
-
-For questions or issues, please open a GitHub issue or contact [your email].
-
----
-
 ## Demo Screenshots
 
 The Gradio interface shows:
@@ -475,7 +375,7 @@ The Gradio interface shows:
 
 **Model Checkpoint**: `outputs/models/radial_v1-epoch=04-val_ssim=0.7963.ckpt` (300MB)
 
-**Model Download**: [Google Drive Link](https://drive.google.com/file/d/YOUR_FILE_ID_HERE/view?usp=sharing)
+**Model Download**: [Google Drive Link](https://drive.google.com/file/d/15gfGositabviKfNejV1yprk4LAcIy7Ob/view?usp=sharing)
 
 **Quick Demo Command**:
 ```bash
@@ -483,22 +383,4 @@ The Gradio interface shows:
 python scripts/demo.py --ckpt outputs/models/radial_v1-epoch=04-val_ssim=0.7963.ckpt --mode ensemble
 ```
 
----
 
-## 📦 Pre-trained Model Download
-
-**File**: `radial_v1-epoch=04-val_ssim=0.7963.ckpt` (300MB)
-**Download**: [Google Drive](https://drive.google.com/file/d/YOUR_FILE_ID_HERE/view?usp=sharing)
-
-**Performance**:
-- Validation SSIM: **0.7963** (epoch 4)
-- Architecture: Swin-T encoder + radial distortion (k1, k2)
-- Training: Mixed precision, batch size 8, 224×224
-
-**Installation**:
-1. Download the `.ckpt` file from Google Drive
-2. Create directory: `mkdir -p outputs/models`
-3. Place file in: `outputs/models/radial_v1-epoch=04-val_ssim=0.7963.ckpt`
-4. Run demo: `make demo` or use the direct command above
-
-**Note**: Replace `YOUR_FILE_ID_HERE` with your actual Google Drive file ID after uploading.
