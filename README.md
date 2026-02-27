@@ -81,7 +81,7 @@ AutoHDR Project/
 
 The trained model checkpoint is too large for GitHub (300MB). Download it from Google Drive:
 
-**📥 [Download Model: radial_v1-epoch=04-val_ssim=0.7963.ckpt](https://drive.google.com/file/d/YOUR_FILE_ID_HERE/view?usp=sharing)**
+**📥 [Download Model: radial_v1-epoch=04-val_ssim=0.7963.ckpt]([[https://drive.google.com/file/d/YOUR_FILE_ID_HERE/view?usp=sharing](https://drive.google.com/file/d/15gfGositabviKfNejV1yprk4LAcIy7Ob/view?usp=sharing)]**
 
 Place the downloaded `.ckpt` file in:
 ```
