@@ -67,18 +67,18 @@ class LensDistortionDataset(Dataset):
         samples = []
 
         if self.split in ("train", "val"):
-            # Training data: paired images in subdirectories
-            pair_dirs = sorted([d for d in self.data_dir.iterdir() if d.is_dir()])
-
-            for pair_dir in pair_dirs:
-                original_path = pair_dir / "original.jpg"
-                generated_path = pair_dir / "generated.jpg"
-
-                if original_path.exists() and generated_path.exists():
+            # Training data: pairs of *_original.jpg and *_generated.jpg
+            original_files = sorted(list(self.data_dir.glob("*_original.jpg")))
+            
+            for orig_path in original_files:
+                # The generated file has the same prefix but ends in _generated.jpg
+                gen_path = self.data_dir / orig_path.name.replace("_original.jpg", "_generated.jpg")
+                
+                if gen_path.exists():
                     samples.append({
-                        "distorted_path": str(original_path),
-                        "corrected_path": str(generated_path),
-                        "pair_id": pair_dir.name,
+                        "distorted_path": str(orig_path),
+                        "corrected_path": str(gen_path),
+                        "pair_id": orig_path.stem.replace("_original", ""),
                     })
         else:
             # Test data: single images
@@ -137,69 +137,58 @@ class LensDistortionDataset(Dataset):
         """
         sample = self.samples[idx]
 
-        # Load distorted image
-        distorted = self._load_image(sample["distorted_path"])
+        # Load images as uint8 numpy arrays [H, W, C] in [0, 255]
+        distorted_np = self._load_image(sample["distorted_path"])
 
         # Build output dictionary
-        output = {
-            "distorted": distorted,
+        output: Dict[str, torch.Tensor | str] = {
             "image_id": sample.get("pair_id", sample.get("image_id")),
         }
 
-        # Load corrected image if available (training/val)
         if "corrected_path" in sample:
-            corrected = self._load_image(sample["corrected_path"])
+            corrected_np = self._load_image(sample["corrected_path"])
 
-            # Apply transforms to both images consistently
+            # Ensure both images have the same dimensions
+            target_h = min(distorted_np.shape[0], corrected_np.shape[0])
+            target_w = min(distorted_np.shape[1], corrected_np.shape[1])
+            distorted_np = distorted_np[:target_h, :target_w, :]
+            corrected_np = corrected_np[:target_h, :target_w, :]
+
             if self.transform is not None:
-                # Albumentations expects numpy arrays
-                distorted_np = distorted.permute(1, 2, 0).numpy()
-                corrected_np = corrected.permute(1, 2, 0).numpy()
-
-                # Use additional_targets to apply same transform
                 transformed = self.transform(
                     image=distorted_np,
-                    mask=corrected_np  # Trick: use mask for second image
+                    mask=corrected_np,
                 )
+                distorted_np = transformed["image"]
+                corrected_np = transformed["mask"]
 
-                distorted = torch.from_numpy(transformed["image"]).permute(2, 0, 1)
-                corrected = torch.from_numpy(transformed["mask"]).permute(2, 0, 1)
-
-            output["corrected"] = corrected
+            # Convert to tensors [H, W, C] -> [C, H, W]
+            output["distorted"] = torch.from_numpy(distorted_np).permute(2, 0, 1).float()
+            output["corrected"] = torch.from_numpy(corrected_np).permute(2, 0, 1).float()
         else:
-            # Test set: only transform distorted
             if self.transform is not None:
-                distorted_np = distorted.permute(1, 2, 0).numpy()
                 transformed = self.transform(image=distorted_np)
-                distorted = torch.from_numpy(transformed["image"]).permute(2, 0, 1)
+                distorted_np = transformed["image"]
 
-            output["distorted"] = distorted
+            output["distorted"] = torch.from_numpy(distorted_np).permute(2, 0, 1).float()
 
         return output
 
-    def _load_image(self, path: str) -> torch.Tensor:
+    def _load_image(self, path: str) -> NDArray[np.uint8]:
         """
-        Load an image from disk.
+        Load an image from disk as a uint8 numpy array.
 
         Args:
             path: Path to image file
 
         Returns:
-            Image tensor [C, H, W] in range [0, 1]
+            Image as numpy array [H, W, C] in range [0, 255], uint8
         """
-        # Load with OpenCV (BGR)
         img = cv2.imread(path)
 
         if img is None:
             raise ValueError(f"Failed to load image: {path}")
 
-        # Convert BGR -> RGB
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        # Normalize to [0, 1]
-        img = img.astype(np.float32) / 255.0
-
-        # Convert to tensor [H, W, C] -> [C, H, W]
-        img_tensor = torch.from_numpy(img).permute(2, 0, 1)
-
-        return img_tensor
+        return img

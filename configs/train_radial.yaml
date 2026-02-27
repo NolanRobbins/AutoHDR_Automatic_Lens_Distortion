@@ -1,0 +1,63 @@
+# Radial Distortion Model — Brown-Conrady k1/k2 Prediction
+# Predicts 2 physically-meaningful distortion coefficients instead of
+# 200 free TPS control-point coordinates. The correction grid is computed
+# analytically, giving the optimizer a steep, well-conditioned landscape.
+
+model:
+  type: "radial"
+  encoder: "swin_tiny_patch4_window7_224"
+  pretrained: true
+  image_size: [224, 224]
+  num_k: 2              # k1 + k2 radial coefficients
+  predict_center: false  # Assume distortion center ≈ image center
+
+loss:
+  type: "tps_perceptual"
+  w_l1: 1.0
+  w_lpips: 1.0
+  w_edge: 2.0
+  w_tps_smooth: 0.0     # Not applicable to radial model
+  w_param_reg: 0.01     # Light L2 penalty on k1/k2 to prevent extreme corrections
+
+training:
+  batch_size: 8
+  accumulate_grad_batches: 2  # Effective batch = 16
+  num_epochs: 50
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+  precision: "16-mixed"
+
+  T_0: 10
+  T_mult: 2
+  eta_min: 1.0e-6
+
+  gradient_clip_val: 1.0
+  gradient_clip_algorithm: "norm"
+
+data:
+  data_dir: "data"
+  val_split: 0.15
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+
+callbacks:
+  early_stopping:
+    monitor: "val_loss"
+    patience: 15
+    mode: "min"
+    min_delta: 0.0005
+
+  model_checkpoint:
+    monitor: "val_ssim"
+    mode: "max"
+    save_top_k: 3
+    filename: "radial_v1-{epoch:02d}-{val_ssim:.4f}"
+
+logging:
+  project: "lens-correction"
+  name: "radial-v1"
+  log_every_n_steps: 25
+  save_dir: "outputs/logs"
+
+seed: 42

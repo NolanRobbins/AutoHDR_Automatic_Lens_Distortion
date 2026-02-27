@@ -46,7 +46,7 @@ def get_train_transforms(
             ),
 
             # Noise and blur (mild, helps generalization)
-            A.GaussNoise(var_limit=(5.0, 15.0), p=0.3),
+            A.GaussNoise(p=0.3),
             A.GaussianBlur(blur_limit=3, p=0.2),
 
             # Normalization
@@ -144,7 +144,7 @@ def get_advanced_train_transforms(
             ),
 
             # Noise and blur
-            A.GaussNoise(var_limit=(10.0, 50.0), p=0.4),
+            A.GaussNoise(p=0.4),
             A.OneOf(
                 [
                     A.GaussianBlur(blur_limit=5, p=1.0),
